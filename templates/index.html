@@ -117,7 +117,7 @@
           const condition = data.condition?.toLowerCase() || "unknown";
           changeBackground(condition);
 
-          document.getElementById('icon').textContent = data.icon || "🌡️";
+          // document.getElementById('icon').textContent = data.icon || "🌡️";
           document.getElementById('location').textContent = data.location;
           document.getElementById('temperature').textContent = `${data.temp_c}°C`;
           document.getElementById('condition').textContent = data.condition || "";
