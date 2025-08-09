@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather at Location</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    #map { height: 400px; }
+    body {
+      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+      color: white;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-3xl glass p-6 shadow-xl">
+    <h1 class="text-3xl font-bold mb-4 text-center">🌦️ Weather Explorer</h1>
+    <p class="text-center mb-6 text-gray-200">Click on the map to choose a location and get the current temperature!</p>
+
+    <div id="map" class="rounded-lg overflow-hidden mb-6 shadow-md"></div>
+
+    <div class="flex flex-col items-center space-y-4">
+      <button onclick="getWeather()" class="bg-blue-500 hover:bg-blue-600 transition px-6 py-2 rounded-full font-semibold text-white shadow-md">
+        Get Weather
+      </button>
+
+      <div id="info" class="text-center text-lg font-medium text-white"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    let selectedLat = null;
+    let selectedLon = null;
+
+    const map = L.map('map').setView([24.8607, 67.0011], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    let marker = null;
+
+    map.on('click', function (e) {
+      selectedLat = e.latlng.lat;
+      selectedLon = e.latlng.lng;
+
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([selectedLat, selectedLon]).addTo(map);
+
+      document.getElementById('info').innerHTML = `
+        📍 Selected Location: <br/>
+        <span class="text-blue-200">${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}</span>
+      `;
+    });
+
+    function getWeather() {
+      if (!selectedLat || !selectedLon) {
+        alert("Please select a location on the map.");
+        return;
+      }
+
+      fetch('/get_weather', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: selectedLat, lon: selectedLon })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('info').innerHTML = "❌ Failed to fetch weather.";
+        } else {
+          document.getElementById('info').innerHTML = `
+            🌍 Location: <strong>${data.location}</strong><br/>
+            🌡️ Temperature: <strong>${data.temp_c}°C</strong>
+          `;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
