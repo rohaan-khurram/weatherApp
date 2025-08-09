@@ -14,7 +14,7 @@
   <style>
     #map { height: 400px; }
     body {
-      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      transition: background 0.8s ease-in-out;
       color: white;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
@@ -25,24 +25,38 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
-    .shadow-glow {
-      box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+    .weather-icon {
+      font-size: 3rem;
+      animation: float 2s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center px-4 py-8">
-  <div class="w-full max-w-3xl glass p-8 shadow-glow">
-    <h1 class="text-4xl font-extrabold mb-4 text-center tracking-wide">🌦️ Weather Explorer</h1>
-    <p class="text-center mb-8 text-gray-300">Click anywhere on the map to pick a location and check the live temperature!</p>
+<body class="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-to-br from-sky-800 to-blue-900">
+  <div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 glass p-8 shadow-lg">
+    <!-- Map Section -->
+    <div>
+      <h1 class="text-4xl font-extrabold mb-4 tracking-wide text-center">🌍 Pick a Location</h1>
+      <div id="map" class="rounded-xl overflow-hidden shadow-lg"></div>
+      <p class="mt-4 text-center text-gray-300">Click anywhere to choose a location.</p>
+    </div>
 
-    <div id="map" class="rounded-xl overflow-hidden mb-8 shadow-lg"></div>
+    <!-- Weather Section -->
+    <div class="flex flex-col items-center justify-center text-center space-y-6">
+      <div id="weather-card" class="opacity-0 transform scale-95 transition-all duration-500 glass p-6 w-full">
+        <div id="icon" class="weather-icon">❓</div>
+        <h2 id="location" class="text-2xl font-bold"></h2>
+        <p id="temperature" class="text-4xl font-extrabold"></p>
+        <p id="condition" class="text-lg text-gray-200"></p>
+        <div id="extra" class="mt-4 text-sm text-gray-300"></div>
+      </div>
 
-    <div class="flex flex-col items-center space-y-6">
       <button onclick="getWeather()" class="bg-blue-500 hover:bg-blue-600 transition px-8 py-3 rounded-full font-semibold text-lg shadow-lg">
         Get Weather
       </button>
-
-      <div id="info" class="text-center text-xl font-medium text-white"></div>
     </div>
   </div>
 
@@ -55,9 +69,9 @@
 
     const map = L.map('map').setView([24.8607, 67.0011], 6);
 
-    // ✅ English map tiles using Carto Light theme
+    // English tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.carto.com/">CARTO</a>',
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 19
     }).addTo(map);
@@ -70,12 +84,19 @@
 
       if (marker) map.removeLayer(marker);
       marker = L.marker([selectedLat, selectedLon]).addTo(map);
-
-      document.getElementById('info').innerHTML = `
-        📍 Selected Location:<br/>
-        <span class="text-blue-200">${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}</span>
-      `;
     });
+
+    function changeBackground(condition) {
+      if (condition.includes("sun") || condition.includes("clear")) {
+        document.body.style.background = "linear-gradient(135deg, #FFD93D, #FF8400)";
+      } else if (condition.includes("rain")) {
+        document.body.style.background = "linear-gradient(135deg, #3a6073, #16222A)";
+      } else if (condition.includes("cloud")) {
+        document.body.style.background = "linear-gradient(135deg, #bdc3c7, #2c3e50)";
+      } else {
+        document.body.style.background = "linear-gradient(135deg, #0f2027, #203a43, #2c5364)";
+      }
+    }
 
     function getWeather() {
       if (!selectedLat || !selectedLon) {
@@ -91,12 +112,23 @@
       .then(response => response.json())
       .then(data => {
         if (data.error) {
-          document.getElementById('info').innerHTML = "❌ Failed to fetch weather.";
+          alert("Failed to fetch weather.");
         } else {
-          document.getElementById('info').innerHTML = `
-            🌍 Location: <strong>${data.location}</strong><br/>
-            🌡️ Temperature: <strong>${data.temp_c}°C</strong>
+          const condition = data.condition?.toLowerCase() || "unknown";
+          changeBackground(condition);
+
+          document.getElementById('icon').textContent = data.icon || "🌡️";
+          document.getElementById('location').textContent = data.location;
+          document.getElementById('temperature').textContent = `${data.temp_c}°C`;
+          document.getElementById('condition').textContent = data.condition || "";
+          document.getElementById('extra').innerHTML = `
+            💧 Humidity: ${data.humidity || "--"}% <br>
+            🌬️ Wind: ${data.wind_kph || "--"} km/h
           `;
+
+          const card = document.getElementById('weather-card');
+          card.style.opacity = "1";
+          card.style.transform = "scale(1)";
         }
       });
     }

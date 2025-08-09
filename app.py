@@ -19,7 +19,11 @@ def get_weather():
         data = response.json()
         return jsonify({
             "location": data['location']['name'],
-            "temp_c": data['current']['temp_c']
+            "temp_c": data['current']['temp_c'],
+            "condition": data['current']['condition']['text'],
+            "icon": data['current']['condition']['icon'],
+            "humidity": data['current']['humidity'],
+            "wind_kph": data['current']['wind_kph']
         })
     else:
         return jsonify({"error": "Failed to fetch weather"}), 500
