@@ -3,130 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <title>Weather App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: #f4f8fb;
-            margin: 0;
-            padding: 0;
+            padding: 20px;
         }
-
-        h1 {
-            background: #2196f3;
-            color: white;
-            padding: 15px;
-            margin: 0;
-        }
-
         #map {
-            width: 100%;
             height: 400px;
-            margin-bottom: 15px;
+            width: 100%;
+            margin-bottom: 10px;
         }
-
-        #getWeatherBtn {
-            display: block;
-            margin: 0 auto 20px;
-            padding: 12px 25px;
+        #weatherInfo {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        button {
+            padding: 10px 20px;
             font-size: 16px;
-            border: none;
-            background: #4CAF50;
-            color: white;
-            border-radius: 6px;
+            margin-top: 10px;
             cursor: pointer;
-            transition: background 0.3s ease;
         }
-
-        #getWeatherBtn:hover {
-            background: #45a049;
-        }
-
-        #weatherCard {
-            max-width: 300px;
-            background: white;
-            padding: 15px;
-            margin: 0 auto;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-        }
-
-        #weatherIcon img {
-            width: 64px;
-            height: 64px;
-        }
-
-        #temp {
-            font-size: 2em;
-            margin: 10px 0;
+        img.weather-icon {
+            vertical-align: middle;
         }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
 
-    <h1>Weather App</h1>
+<h1>Weather App</h1>
+<div id="map"></div>
+<button id="getWeatherBtn">Get Weather</button>
 
-    <div id="map"></div>
+<div id="weatherInfo"></div>
 
-    <button id="getWeatherBtn">Get Weather</button>
+<script>
+    let selectedLat = null;
+    let selectedLon = null;
 
-    <div id="weatherCard" style="display: none;">
-        <div id="weatherIcon"></div>
-        <div id="temp"></div>
-        <div id="condition"></div>
-    </div>
+    // Initialize map
+    const map = L.map('map').setView([24.8607, 67.0011], 10); // Karachi default
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    <script>
-        let lat = 0, lon = 0;
+    let marker = null;
 
-        function initMap() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    lat = pos.coords.latitude;
-                    lon = pos.coords.longitude;
-                    let map = L.map('map').setView([lat, lon], 10);
+    // Click to select location
+    map.on('click', function (e) {
+        selectedLat = e.latlng.lat;
+        selectedLon = e.latlng.lng;
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors'
-                    }).addTo(map);
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker([selectedLat, selectedLon]).addTo(map);
+    });
 
-                    L.marker([lat, lon]).addTo(map).bindPopup("You are here").openPopup();
-                });
-            } else {
-                alert("Geolocation not supported.");
-            }
+    // Button click fetch weather
+    document.getElementById('getWeatherBtn').addEventListener('click', function () {
+        if (!selectedLat || !selectedLon) {
+            alert('Please click on the map to select a location first.');
+            return;
         }
 
-        document.getElementById('getWeatherBtn').addEventListener('click', async () => {
-            if (!lat || !lon) {
-                alert("Location not loaded yet!");
-                return;
-            }
-            const res = await fetch(`/weather?lat=${lat}&lon=${lon}`);
-            const data = await res.json();
-
-            document.getElementById('weatherIcon').innerHTML = `
-                <img src="https:${data.current.condition.icon}" alt="${data.current.condition.text}">
-            `;
-            document.getElementById('temp').textContent = `${data.current.temp_c}°C`;
-            document.getElementById('condition').textContent = data.current.condition.text;
-
-            document.getElementById('weatherCard').style.display = 'block';
-        });
-
-        // Load Leaflet Map Library
-        const leafletScript = document.createElement('script');
-        leafletScript.src = "https://unpkg.com/leaflet/dist/leaflet.js";
-        document.head.appendChild(leafletScript);
-
-        const leafletCSS = document.createElement('link');
-        leafletCSS.rel = "stylesheet";
-        leafletCSS.href = "https://unpkg.com/leaflet/dist/leaflet.css";
-        document.head.appendChild(leafletCSS);
-
-        leafletScript.onload = initMap;
-    </script>
+        fetch(`/weather?lat=${selectedLat}&lon=${selectedLon}`)
+            .then(response => response.json())
+            .then(data => {
+                const iconUrl = "https:" + data.current.condition.icon;
+                document.getElementById('weatherInfo').innerHTML = `
+                    <strong>Location:</strong> ${data.location.name}, ${data.location.country} <br>
+                    <strong>Temperature:</strong> ${data.current.temp_c}°C <br>
+                    <img class="weather-icon" src="${iconUrl}" alt="Weather icon"> ${data.current.condition.text}
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching weather:', error);
+                alert('Error fetching weather. Check console for details.');
+            });
+    });
+</script>
 
 </body>
 </html>
