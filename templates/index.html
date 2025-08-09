@@ -1,137 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weather Explorer</title>
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <!-- TailwindCSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    #map { height: 400px; }
-    body {
-      transition: background 0.8s ease-in-out;
-      color: white;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .glass {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 1rem;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .weather-icon {
-      font-size: 3rem;
-      animation: float 2s infinite ease-in-out;
-    }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-  </style>
-</head>
-<body class="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-to-br from-sky-800 to-blue-900">
-  <div class="w-full max-w-6xl grid md:grid-cols-2 gap-8 glass p-8 shadow-lg">
-    <!-- Map Section -->
-    <div>
-      <h1 class="text-4xl font-extrabold mb-4 tracking-wide text-center">🌍 Pick a Location</h1>
-      <div id="map" class="rounded-xl overflow-hidden shadow-lg"></div>
-      <p class="mt-4 text-center text-gray-300">Click anywhere to choose a location.</p>
-    </div>
-
-    <!-- Weather Section -->
-    <div class="flex flex-col items-center justify-center text-center space-y-6">
-      <div id="weather-card" class="opacity-0 transform scale-95 transition-all duration-500 glass p-6 w-full">
-        <div id="icon" class="weather-icon">❓</div>
-        <h2 id="location" class="text-2xl font-bold"></h2>
-        <p id="temperature" class="text-4xl font-extrabold"></p>
-        <p id="condition" class="text-lg text-gray-200"></p>
-        <div id="extra" class="mt-4 text-sm text-gray-300"></div>
-      </div>
-
-      <button onclick="getWeather()" class="bg-blue-500 hover:bg-blue-600 transition px-8 py-3 rounded-full font-semibold text-lg shadow-lg">
-        Get Weather
-      </button>
-    </div>
-  </div>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <script>
-    let selectedLat = null;
-    let selectedLon = null;
-
-    const map = L.map('map').setView([24.8607, 67.0011], 6);
-
-    // English tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
-
-    let marker = null;
-
-    map.on('click', function (e) {
-      selectedLat = e.latlng.lat;
-      selectedLon = e.latlng.lng;
-
-      if (marker) map.removeLayer(marker);
-      marker = L.marker([selectedLat, selectedLon]).addTo(map);
-    });
-
-    function changeBackground(condition) {
-      if (condition.includes("sun") || condition.includes("clear")) {
-        document.body.style.background = "linear-gradient(135deg, #FFD93D, #FF8400)";
-      } else if (condition.includes("rain")) {
-        document.body.style.background = "linear-gradient(135deg, #3a6073, #16222A)";
-      } else if (condition.includes("cloud")) {
-        document.body.style.background = "linear-gradient(135deg, #bdc3c7, #2c3e50)";
-      } else {
-        document.body.style.background = "linear-gradient(135deg, #0f2027, #203a43, #2c5364)";
-      }
-    }
-
-    function getWeather() {
-      if (!selectedLat || !selectedLon) {
-        alert("Please select a location on the map.");
-        return;
-      }
-
-      fetch('/get_weather', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: selectedLat, lon: selectedLon })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          alert("Failed to fetch weather.");
-        } else {
-          const condition = data.condition?.toLowerCase() || "unknown";
-          changeBackground(condition);
-
-          document.getElementById('icon').textContent = data.icon || "🌡️";
-          document.getElementById('location').textContent = data.location;
-          document.getElementById('temperature').textContent = `${data.temp_c}°C`;
-          document.getElementById('condition').textContent = data.condition || "";
-          document.getElementById('extra').innerHTML = `
-            💧 Humidity: ${data.humidity || "--"}% <br>
-            🌬️ Wind: ${data.wind_kph || "--"} km/h
-          `;
-
-          const card = document.getElementById('weather-card');
-          card.style.opacity = "1";
-          card.style.transform = "scale(1)";
+    <meta charset="UTF-8">
+    <title>Weather App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f8fb;
+            margin: 0;
+            padding: 0;
         }
-      });
-    }
-  </script>
+
+        h1 {
+            background: #2196f3;
+            color: white;
+            padding: 15px;
+            margin: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 15px;
+        }
+
+        #getWeatherBtn {
+            display: block;
+            margin: 0 auto 20px;
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #getWeatherBtn:hover {
+            background: #45a049;
+        }
+
+        #weatherCard {
+            max-width: 300px;
+            background: white;
+            padding: 15px;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #weatherIcon img {
+            width: 64px;
+            height: 64px;
+        }
+
+        #temp {
+            font-size: 2em;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Weather App</h1>
+
+    <div id="map"></div>
+
+    <button id="getWeatherBtn">Get Weather</button>
+
+    <div id="weatherCard" style="display: none;">
+        <div id="weatherIcon"></div>
+        <div id="temp"></div>
+        <div id="condition"></div>
+    </div>
+
+    <script>
+        let lat = 0, lon = 0;
+
+        function initMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    lat = pos.coords.latitude;
+                    lon = pos.coords.longitude;
+                    let map = L.map('map').setView([lat, lon], 10);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    L.marker([lat, lon]).addTo(map).bindPopup("You are here").openPopup();
+                });
+            } else {
+                alert("Geolocation not supported.");
+            }
+        }
+
+        document.getElementById('getWeatherBtn').addEventListener('click', async () => {
+            if (!lat || !lon) {
+                alert("Location not loaded yet!");
+                return;
+            }
+            const res = await fetch(`/weather?lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+
+            document.getElementById('weatherIcon').innerHTML = `
+                <img src="https:${data.current.condition.icon}" alt="${data.current.condition.text}">
+            `;
+            document.getElementById('temp').textContent = `${data.current.temp_c}°C`;
+            document.getElementById('condition').textContent = data.current.condition.text;
+
+            document.getElementById('weatherCard').style.display = 'block';
+        });
+
+        // Load Leaflet Map Library
+        const leafletScript = document.createElement('script');
+        leafletScript.src = "https://unpkg.com/leaflet/dist/leaflet.js";
+        document.head.appendChild(leafletScript);
+
+        const leafletCSS = document.createElement('link');
+        leafletCSS.rel = "stylesheet";
+        leafletCSS.href = "https://unpkg.com/leaflet/dist/leaflet.css";
+        document.head.appendChild(leafletCSS);
+
+        leafletScript.onload = initMap;
+    </script>
+
 </body>
 </html>
