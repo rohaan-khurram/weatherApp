@@ -2,158 +2,139 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gen-Z Weather App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Weather App</title>
     <style>
-        /* Background Gradient Animation */
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d0d0d;
+            color: #f0f0f0;
             margin: 0;
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #ff6ec7, #845ec2, #00c9ff, #f9f871);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            color: white;
-            text-align: center;
-            min-height: 100vh;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 20px;
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            min-height: 100vh;
         }
 
-        /* Title Glow */
-        h1 {
-            font-size: 2.5rem;
-            text-shadow: 0 0 10px #fff, 0 0 20px #ff6ec7, 0 0 30px #845ec2;
+        header {
+            margin-top: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
         }
 
-        /* Glassmorphism container */
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-            border: 2px solid transparent;
-            background-clip: padding-box;
-            transition: border-color 0.5s ease;
-        }
-        .glass:hover {
-            border-color: #fff;
-            box-shadow: 0 0 25px #ff6ec7, 0 0 40px #845ec2;
-        }
-
-        /* Map Styling */
         #map {
-            height: 300px;
-            width: 100%;
+            width: 90%;
+            max-width: 700px;
+            height: 350px;
+            margin-top: 20px;
             border-radius: 15px;
-            margin-bottom: 15px;
-            border: 2px solid #fff;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+            border: 2px solid #444;
+            animation: borderGlow 3s infinite alternate;
         }
 
-        /* Button Glow */
-        button {
-            background: linear-gradient(90deg, #ff6ec7, #845ec2);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            font-size: 1rem;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            box-shadow: 0 0 10px #ff6ec7, 0 0 20px #845ec2;
+        @keyframes borderGlow {
+            0% { box-shadow: 0 0 5px #00f7ff; }
+            100% { box-shadow: 0 0 20px #00f7ff; }
         }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #00f7ff, #0066ff);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+
         button:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 20px #ff6ec7, 0 0 40px #845ec2;
+            box-shadow: 0 0 15px #00f7ff;
         }
 
-        /* Weather info */
         #weather {
-            margin-top: 15px;
-            font-size: 1.2rem;
-        }
-        #weather img {
-            vertical-align: middle;
+            margin-top: 20px;
+            text-align: center;
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid #333;
+            animation: borderGlow 3s infinite alternate;
         }
 
-        /* Responsive */
-        @media (max-width: 600px) {
-            #map {
-                height: 200px;
-            }
-            h1 {
-                font-size: 2rem;
-            }
+        #weather img {
+            width: 60px;
+            height: 60px;
         }
     </style>
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 <body>
+    <header>Weather App</header>
 
-    <h1>🌈 Gen-Z Weather App</h1>
+    <div id="map"></div>
+    <button id="getWeather">Get Weather</button>
 
-    <div class="glass" style="max-width: 500px; width: 100%;">
-        <div id="map"></div>
-        <button id="getWeatherBtn">Get Weather 🌤️</button>
-        <div id="weather"></div>
+    <div id="weather">
+        <p>Click on the map or use the button to get weather info.</p>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        let selectedLat, selectedLon;
+        let map, marker, lat, lng;
 
-        // Initialize map
-        const map = L.map('map').setView([24.8607, 67.0011], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 24.8607, lng: 67.0011 },
+                zoom: 8,
+                styles: [
+                    { elementType: 'geometry', stylers: [{color: '#242f3e'}] },
+                    { elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}] },
+                    { elementType: 'labels.text.fill', stylers: [{color: '#746855'}] },
+                    { featureType: 'water', elementType: 'geometry', stylers: [{color: '#17263c'}] }
+                ]
+            });
 
-        let marker;
-        map.on('click', function(e) {
-            selectedLat = e.latlng.lat;
-            selectedLon = e.latlng.lng;
+            map.addListener("click", (event) => {
+                lat = event.latLng.lat();
+                lng = event.latLng.lng();
+                if (marker) marker.setMap(null);
+                marker = new google.maps.Marker({
+                    position: { lat, lng },
+                    map: map
+                });
+            });
+        }
 
-            if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng).addTo(map);
-            }
-        });
-
-        // Fetch weather
-        document.getElementById("getWeatherBtn").addEventListener("click", async () => {
-            if (!selectedLat || !selectedLon) {
-                alert("Click on the map to select a location first!");
+        document.getElementById("getWeather").addEventListener("click", async () => {
+            if (!lat || !lng) {
+                alert("Please select a location on the map first!");
                 return;
             }
+
             try {
-                const res = await fetch(`/weather?lat=${selectedLat}&lon=${selectedLon}`);
-                if (!res.ok) throw new Error("Failed to fetch weather");
+                const res = await fetch(`/get_weather?lat=${lat}&lon=${lng}`);
+                if (!res.ok) throw new Error("Network response not ok");
                 const data = await res.json();
 
                 document.getElementById("weather").innerHTML = `
-                    <strong>${data.location.name}, ${data.location.country}</strong><br>
-                    ${data.current.condition.text} <img src="${data.current.condition.icon}" alt="icon"><br>
-                    🌡️ ${data.current.temp_c}°C | 💧 ${data.current.humidity}% humidity
+                    <h3>${data.location.name}, ${data.location.country}</h3>
+                    <p>${data.current.condition.text}</p>
+                    <img src="${data.current.condition.icon}" alt="Weather icon">
+                    <p>Temperature: ${data.current.temp_c}°C</p>
+                    <p>Humidity: ${data.current.humidity}%</p>
                 `;
             } catch (err) {
                 console.error(err);
-                document.getElementById("weather").innerText = "Error fetching weather.";
+                document.getElementById("weather").innerHTML = `<p>Error fetching weather.</p>`;
             }
         });
     </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&callback=initMap"></script>
 </body>
 </html>
