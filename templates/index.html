@@ -3,138 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather App</title>
+    <title>WeatherApp</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0d0d0d;
-            color: #f0f0f0;
+            font-family: 'Segoe UI', sans-serif;
             margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            background-color: #121212;
+            color: #f5f5f5;
+            text-align: center;
         }
 
         header {
-            margin-top: 20px;
-            font-size: 2rem;
+            padding: 15px;
+            font-size: 1.8em;
             font-weight: bold;
-            color: #fff;
-            text-align: center;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #333;
         }
 
         #map {
-            width: 90%;
-            max-width: 700px;
-            height: 350px;
-            margin-top: 20px;
+            height: 400px;
+            margin: 20px auto;
+            max-width: 800px;
             border-radius: 15px;
             border: 2px solid #444;
-            animation: borderGlow 3s infinite alternate;
+            box-shadow: 0 0 15px rgba(0, 255, 200, 0.3);
+            transition: box-shadow 0.5s ease-in-out;
         }
 
-        @keyframes borderGlow {
-            0% { box-shadow: 0 0 5px #00f7ff; }
-            100% { box-shadow: 0 0 20px #00f7ff; }
+        #map:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 200, 0.7);
         }
 
         button {
-            margin-top: 15px;
-            padding: 12px 25px;
-            background: linear-gradient(90deg, #00f7ff, #0066ff);
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 1em;
+            background-color: #00bcd4;
             border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
+            border-radius: 10px;
+            color: white;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+            transition: background 0.3s, box-shadow 0.3s;
         }
 
         button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #00f7ff;
+            background-color: #0097a7;
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.8);
         }
 
-        #weather {
+        .weather-info {
             margin-top: 20px;
-            text-align: center;
-            background-color: #1a1a1a;
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            border: 1px solid #333;
-            animation: borderGlow 3s infinite alternate;
+            padding: 15px;
+            background-color: #1e1e1e;
+            display: inline-block;
+            border-radius: 12px;
+            border: 1px solid #444;
+            box-shadow: 0 0 10px rgba(0, 255, 200, 0.3);
+            transition: box-shadow 0.4s ease-in-out;
         }
 
-        #weather img {
-            width: 60px;
-            height: 60px;
+        .weather-info:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.6);
+        }
+
+        img {
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
+
     <header>Weather App</header>
 
     <div id="map"></div>
-    <button id="getWeather">Get Weather</button>
+    <button onclick="getWeather()">Get Weather for Selected Location</button>
 
-    <div id="weather">
-        <p>Click on the map or use the button to get weather info.</p>
-    </div>
+    <div class="weather-info" id="weatherResult"></div>
 
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        let map, marker, lat, lng;
+        let selectedLat = null;
+        let selectedLng = null;
 
-        function initMap() {
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 24.8607, lng: 67.0011 },
-                zoom: 8,
-                styles: [
-                    { elementType: 'geometry', stylers: [{color: '#242f3e'}] },
-                    { elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}] },
-                    { elementType: 'labels.text.fill', stylers: [{color: '#746855'}] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{color: '#17263c'}] }
-                ]
-            });
+        // Initialize Leaflet Map
+        const map = L.map('map').setView([24.8607, 67.0011], 5); // Default: Karachi
 
-            map.addListener("click", (event) => {
-                lat = event.latLng.lat();
-                lng = event.latLng.lng();
-                if (marker) marker.setMap(null);
-                marker = new google.maps.Marker({
-                    position: { lat, lng },
-                    map: map
-                });
-            });
-        }
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-        document.getElementById("getWeather").addEventListener("click", async () => {
-            if (!lat || !lng) {
-                alert("Please select a location on the map first!");
+        let marker;
+
+        map.on('click', function (e) {
+            selectedLat = e.latlng.lat;
+            selectedLng = e.latlng.lng;
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+        });
+
+        async function getWeather() {
+            if (!selectedLat || !selectedLng) {
+                alert("Please select a location on the map first.");
                 return;
             }
 
             try {
-                const res = await fetch(`/get_weather?lat=${lat}&lon=${lng}`);
-                if (!res.ok) throw new Error("Network response not ok");
-                const data = await res.json();
+                const response = await fetch(`/weather?lat=${selectedLat}&lon=${selectedLng}`);
+                const data = await response.json();
 
-                document.getElementById("weather").innerHTML = `
-                    <h3>${data.location.name}, ${data.location.country}</h3>
-                    <p>${data.current.condition.text}</p>
-                    <img src="${data.current.condition.icon}" alt="Weather icon">
-                    <p>Temperature: ${data.current.temp_c}°C</p>
-                    <p>Humidity: ${data.current.humidity}%</p>
+                if (data.error) {
+                    document.getElementById("weatherResult").innerHTML = "Error fetching weather.";
+                    return;
+                }
+
+                document.getElementById("weatherResult").innerHTML = `
+                    <h3>${data.location}</h3>
+                    <p>${data.condition}</p>
+                    <p>Temperature: ${data.temp_c}°C</p>
+                    <img src="${data.icon}" alt="Weather Icon">
                 `;
-            } catch (err) {
-                console.error(err);
-                document.getElementById("weather").innerHTML = `<p>Error fetching weather.</p>`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById("weatherResult").innerHTML = "Error fetching weather.";
             }
-        });
+        }
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&callback=initMap"></script>
+
 </body>
 </html>
