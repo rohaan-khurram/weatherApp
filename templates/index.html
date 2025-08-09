@@ -101,7 +101,7 @@
             }
 
             try {
-                let response = await fetch(`/weather?lat=${selectedLatLng.lat}&lon=${selectedLatLng.lng}`);
+                let response = await fetch(`/get_weather?lat=${selectedLatLng.lat}&lon=${selectedLatLng.lng}`);
                 let data = await response.json();
 
                 if (data.error) {
