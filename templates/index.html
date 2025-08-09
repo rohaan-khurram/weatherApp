@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weather at Location</title>
+  <title>Weather Explorer</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -14,31 +14,35 @@
   <style>
     #map { height: 400px; }
     body {
-      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
       color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .glass {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 1rem;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .shadow-glow {
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-3xl glass p-6 shadow-xl">
-    <h1 class="text-3xl font-bold mb-4 text-center">🌦️ Weather Explorer</h1>
-    <p class="text-center mb-6 text-gray-200">Click on the map to choose a location and get the current temperature!</p>
+<body class="min-h-screen flex items-center justify-center px-4 py-8">
+  <div class="w-full max-w-3xl glass p-8 shadow-glow">
+    <h1 class="text-4xl font-extrabold mb-4 text-center tracking-wide">🌦️ Weather Explorer</h1>
+    <p class="text-center mb-8 text-gray-300">Click anywhere on the map to pick a location and check the live temperature!</p>
 
-    <div id="map" class="rounded-lg overflow-hidden mb-6 shadow-md"></div>
+    <div id="map" class="rounded-xl overflow-hidden mb-8 shadow-lg"></div>
 
-    <div class="flex flex-col items-center space-y-4">
-      <button onclick="getWeather()" class="bg-blue-500 hover:bg-blue-600 transition px-6 py-2 rounded-full font-semibold text-white shadow-md">
+    <div class="flex flex-col items-center space-y-6">
+      <button onclick="getWeather()" class="bg-blue-500 hover:bg-blue-600 transition px-8 py-3 rounded-full font-semibold text-lg shadow-lg">
         Get Weather
       </button>
 
-      <div id="info" class="text-center text-lg font-medium text-white"></div>
+      <div id="info" class="text-center text-xl font-medium text-white"></div>
     </div>
   </div>
 
@@ -50,8 +54,12 @@
     let selectedLon = null;
 
     const map = L.map('map').setView([24.8607, 67.0011], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
+
+    // ✅ English map tiles using Carto Light theme
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
     }).addTo(map);
 
     let marker = null;
@@ -64,7 +72,7 @@
       marker = L.marker([selectedLat, selectedLon]).addTo(map);
 
       document.getElementById('info').innerHTML = `
-        📍 Selected Location: <br/>
+        📍 Selected Location:<br/>
         <span class="text-blue-200">${selectedLat.toFixed(4)}, ${selectedLon.toFixed(4)}</span>
       `;
     });
